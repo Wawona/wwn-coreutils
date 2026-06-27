@@ -1,0 +1,27 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  eval:
+    name: flake eval (instantiation)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: coreutils instantiates (no build)
+        run: |
+          nix eval --raw .#packages.aarch64-darwin.coreutils-multicall.drvPath
+          nix eval --raw .#packages.aarch64-darwin.coreutils-patched-src-ios.drvPath
+
+  build:
+    name: build coreutils multicall
+    runs-on: macos-15
+    needs: eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - run: nix build .#packages.aarch64-darwin.coreutils-patched-src-ios -L
