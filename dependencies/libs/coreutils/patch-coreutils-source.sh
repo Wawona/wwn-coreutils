@@ -262,18 +262,19 @@ if "WAWONA_WHOAMI_USER_FALLBACK" in text:
 
 marker = "pub fn get_username() -> io::Result<OsString> {\n    // uid2usr should arguably return an OsString but currently doesn't\n    uid2usr(geteuid()).map(Into::into)\n}"
 replacement = '''pub fn get_username() -> io::Result<OsString> {
-    // WAWONA_WHOAMI_USER_FALLBACK: uid2usr/getpwuid often fails in the app
-    // sandbox (no passwd row for the uid). Prefer $USER / $LOGNAME.
-    match uid2usr(geteuid()) {
-        Ok(name) => Ok(name.into()),
-        Err(err) => {
-            for key in ["USER", "LOGNAME"] {
-                if let Ok(val) = std::env::var(key) {
-                    if !val.is_empty() {
-                        return Ok(OsString::from(val));
-                    }
-                }
+    // WAWONA_WHOAMI_USER_FALLBACK: In the app sandbox getpwuid is often missing
+    // *or* returns an empty pw_name (iOS sim). Prefer $USER / $LOGNAME first —
+    // Wawona sets these explicitly (iOS: mobile, Android: wawona).
+    for key in ["USER", "LOGNAME"] {
+        if let Ok(val) = std::env::var(key) {
+            if !val.is_empty() {
+                return Ok(OsString::from(val));
             }
+        }
+    }
+    match uid2usr(geteuid()) {
+        Ok(name) if !name.is_empty() => Ok(name.into()),
+        Ok(_) | Err(_) => {
             #[cfg(target_os = "android")]
             {
                 return Ok(OsString::from("wawona"));
@@ -288,7 +289,10 @@ replacement = '''pub fn get_username() -> io::Result<OsString> {
                 return Ok(OsString::from("mobile"));
             }
             #[allow(unreachable_code)]
-            Err(err)
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "no username for current uid",
+            ))
         }
     }
 }'''
