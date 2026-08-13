@@ -241,3 +241,62 @@ text = text.replace(
 path.write_text(text)
 print("✓ uu_date: treat iOS like macOS (no clock_settime / --set)")
 PY
+
+# === Phase 5: whoami passwd fallback (Android / Apple mobile) ================
+# Bionic and the Apple sandbox often have no getpwuid() entry for the app uid,
+# so uutils whoami errors with "failed to get username" even though the shell
+# sets USER (Android: wawona, iOS: mobile). Prefer USER/LOGNAME, then a
+# platform default, before surfacing the libc error.
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("src/uu/whoami/src/platform/unix.rs")
+if not path.is_file():
+    print("SKIP uu_whoami mobile fallback (layout changed)")
+    raise SystemExit(0)
+
+text = path.read_text()
+if "WAWONA_WHOAMI_USER_FALLBACK" in text:
+    print("✓ uu_whoami mobile fallback already applied (idempotent)")
+    raise SystemExit(0)
+
+marker = "pub fn get_username() -> io::Result<OsString> {\n    // uid2usr should arguably return an OsString but currently doesn't\n    uid2usr(geteuid()).map(Into::into)\n}"
+replacement = '''pub fn get_username() -> io::Result<OsString> {
+    // WAWONA_WHOAMI_USER_FALLBACK: uid2usr/getpwuid often fails in the app
+    // sandbox (no passwd row for the uid). Prefer $USER / $LOGNAME.
+    match uid2usr(geteuid()) {
+        Ok(name) => Ok(name.into()),
+        Err(err) => {
+            for key in ["USER", "LOGNAME"] {
+                if let Ok(val) = std::env::var(key) {
+                    if !val.is_empty() {
+                        return Ok(OsString::from(val));
+                    }
+                }
+            }
+            #[cfg(target_os = "android")]
+            {
+                return Ok(OsString::from("wawona"));
+            }
+            #[cfg(any(
+                target_os = "ios",
+                target_os = "tvos",
+                target_os = "watchos",
+                target_os = "visionos"
+            ))]
+            {
+                return Ok(OsString::from("mobile"));
+            }
+            #[allow(unreachable_code)]
+            Err(err)
+        }
+    }
+}'''
+
+if marker not in text:
+    print("SKIP uu_whoami mobile fallback (anchor drifted)")
+    raise SystemExit(0)
+
+path.write_text(text.replace(marker, replacement, 1))
+print("✓ uu_whoami: USER/LOGNAME/sandbox fallback when getpwuid fails")
+PY

@@ -33,6 +33,7 @@
         patchScript = cuDir + "/patch-coreutils-source.sh";
         patchedSrcRecipe = cuDir + "/coreutils-patched-src.nix";
         multicallRecipe = cuDir + "/multicall.nix";
+        multicallAndroidRecipe = cuDir + "/multicall-android.nix";
         mkPatchedSrc = { pkgs, platform }:
           pkgs.callPackage (cuDir + "/coreutils-patched-src.nix") {
             coreutils-src = import (cuDir + "/coreutils-src.nix") { inherit pkgs; };
