@@ -1,5 +1,7 @@
 # wwn-coreutils
 
+[![CI](https://github.com/Wawona/wwn-coreutils/actions/workflows/ci.yml/badge.svg)](https://github.com/Wawona/wwn-coreutils/actions/workflows/ci.yml)
+
 Wawona's vendored [uutils/coreutils](https://github.com/uutils/coreutils): the
 in-process `ls`/`cat`/`cp`/... multicall used by the App-Store-compliant build
 (no `fork`/`exec`), kept in sync with the `coreutils` Cargo feature subset and
