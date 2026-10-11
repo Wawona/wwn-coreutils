@@ -1,0 +1,44 @@
+# App Store Mode A in-process uutils safe subset (Apple-mobile + watchOS).
+# Authority for this list: wwn-coreutils (this file).
+# Consumers must stay in sync:
+#   - Wawona/Cargo.toml  optional dependency `coreutils` features
+#   - wawona-dispatch.c  wwn_safe_subset[]
+#   - wawona-rootfs       WAWONA_INPROC_TOOLS (names that map to uutils)
+# One name per line. No exit-prone / sandbox-meaningless utils.
+ls
+cat
+cp
+mv
+rm
+mkdir
+rmdir
+ln
+touch
+echo
+pwd
+head
+tail
+wc
+sort
+cut
+tr
+seq
+basename
+dirname
+stat
+du
+df
+date
+env
+printenv
+uname
+whoami
+yes
+tee
+nl
+tac
+fold
+expand
+unexpand
+truncate
+chmod

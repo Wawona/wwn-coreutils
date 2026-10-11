@@ -28,12 +28,17 @@
     {
       # coreutils is not a registry module; it is consumed via these lib helpers
       # (patched source tree for the Rust backend Cargo dep + macOS/Android multicall).
+      # Ownership: this flake owns the uutils pin, patch, and Mode A safe-subset.
+      # Wawona must not re-pin fetchFromGitHub for coreutils; use lib.coreutilsSrc /
+      # lib.mkPatchedSrc. See docs/PATCH-BUDGET.md and docs/APPLE-MOBILE-BACKENDS.md.
       lib = {
         coreutilsSrc = pkgs: import (cuDir + "/coreutils-src.nix") { inherit pkgs; };
         patchScript = cuDir + "/patch-coreutils-source.sh";
         patchedSrcRecipe = cuDir + "/coreutils-patched-src.nix";
         multicallRecipe = cuDir + "/multicall.nix";
         multicallAndroidRecipe = cuDir + "/multicall-android.nix";
+        # Authority list for in-process App Store Mode A utils (one name per line).
+        safeSubsetFile = cuDir + "/safe-subset.txt";
         mkPatchedSrc = { pkgs, platform }:
           pkgs.callPackage (cuDir + "/coreutils-patched-src.nix") {
             coreutils-src = import (cuDir + "/coreutils-src.nix") { inherit pkgs; };
